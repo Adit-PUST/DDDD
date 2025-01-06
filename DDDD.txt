@@ -1,0 +1,294 @@
+1.import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.preprocessing import StandardScaler
+import warnings
+warnings.filterwarnings('ignore')
+
+M2.## Dataset 
+
+3.data_set = pd.read_csv('Breast_cancer_data.csv')
+print(data_set.shape)
+f_title = data_set.columns
+
+M4.## Visualize Correlation Between Features
+
+5.# print(f_labels)
+correlation_matrix = data_set[f_title].corr()
+# print(correlation_matrix)
+plt.figure(figsize=(16,12))
+sns.heatmap(correlation_matrix, annot=True, cmap="Blues")
+plt.title("correlation_matrix")
+plt.show()
+
+M6.## Split Dependent and Independent Data
+
+x = data_set.iloc[:,:-1]
+y = data_set.iloc[:, -1]
+print(x.shape, y.shape)
+
+
+M7.# Feature Selection
+M8.## 1. Recursive Feature Elimination (RFE):
+
+from sklearn.feature_selection import RFE
+from sklearn.svm import SVC
+
+estimator = SVC(kernel="linear")
+selector = RFE(estimator, n_features_to_select=15, step=1)  # Choose a target number of features
+selector = selector.fit(x, y)
+
+# Get the selected features
+selected_features = selector.support_
+x_selected = x.iloc[:, selected_features]
+print(x_selected.shape)
+
+
+9.# print(f_labels)
+correlation_matrix = x_selected.corr()
+# print(correlation_matrix)
+plt.figure(figsize=(16,12))
+sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm")
+plt.title("Correlation Matrix of Selected Features")
+plt.show()
+
+10.from sklearn.model_selection import train_test_split
+
+x_train,x_test,y_train,y_test = train_test_split(x,y,test_size=0.3,random_state=42)
+# print(x_train)
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train)
+# print(x_train)
+x_test = scaler.fit_transform(x_test)
+print(x_train.shape,x_test.shape,y_train.shape,y_test.shape)
+
+
+11.x_train_fs,x_test_fs,y_train_fs,y_test_fs = train_test_split(x_selected,y,test_size=0.3,random_state=42)
+# print(x_train)
+scaler = StandardScaler()
+x_train_fs = scaler.fit_transform(x_train_fs)
+# print(x_train)
+x_test_fs = scaler.fit_transform(x_test_fs)
+print(x_train_fs.shape,x_test_fs.shape,y_train_fs.shape,y_test_fs.shape)
+
+
+M12.## Logistic Regression
+
+13.from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+def logistic_regression(_x_train, _x_test, _y_train, _y_test):
+    # Setting multi_class='multinomial' to use the softmax approach
+    clf = LogisticRegression(multi_class='multinomial', solver='lbfgs', max_iter=1000, random_state=42)
+    
+    # Train the model
+    clf.fit(_x_train, _y_train)
+    
+    # Make predictions on the test data
+    _y_pred = clf.predict(_x_test)
+
+    return accuracy_score(_y_test, _y_pred), confusion_matrix(_y_test, _y_pred),  classification_report(_y_test, _y_pred)
+
+# Evaluate the model
+accuracy_lr, conf_matrix_lr, class_report_lr = logistic_regression(x_train, x_test, y_train, y_test)
+accuracy_lr_fs, conf_matrix_lr_fs, class_report_lr_fs = logistic_regression(x_train_fs, x_test_fs, y_train_fs, y_test_fs)
+
+print(f"Accuracy: {accuracy_lr:.2f}")
+print(f"Accuracy Fs: {accuracy_lr_fs:.2f}")
+print("Confusion Matrix:\n", conf_matrix_lr)
+print("Confusion Matrix fs:\n", conf_matrix_lr_fs)
+print("Classification Report:\n", class_report_lr)
+print("Classification Report fs:\n", class_report_lr_fs)
+
+M14.SVM
+
+15.from sklearn.svm import SVC
+
+def svm(_x_train, _x_test, _y_train, _y_test):
+    classifier = SVC(kernel = 'linear', random_state = 0)
+    classifier.fit(_x_train, _y_train)
+    # Predicting the Test set results
+    _y_pred = classifier.predict(_x_test)
+    
+    # Evaluate the model
+    return accuracy_score(_y_test, _y_pred), confusion_matrix(_y_test, _y_pred), classification_report(_y_test, _y_pred)
+    
+accuracy_svm, conf_matrix_svm, class_report_svm = svm(x_train, x_test, y_train, y_test)
+accuracy_svm_fs, conf_matrix_svm_fs, class_report_svm_fs = svm(x_train_fs, x_test_fs, y_train_fs, y_test_fs)
+print(f"Accuracy: {accuracy_svm:.2f}")
+print(f"Accuracy fs: {accuracy_svm_fs:.2f}")
+print("Confusion Matrix:\n", conf_matrix_svm)
+print("Confusion Matrix fs:\n", conf_matrix_svm_fs)
+print("Classification Report:\n", class_report_svm)
+print("Classification Report fs:\n", class_report_svm_fs)
+
+M16.## Random Forest
+
+17.from sklearn.ensemble import RandomForestRegressor
+def random_forest(_x_train, _x_test, _y_train, _y_test):
+    regressor = RandomForestRegressor(n_estimators = 10, random_state = 0)
+    regressor.fit(_x_train, _y_train)
+    _y_pred = regressor.predict(_x_test)
+    _y_pred = np.round(_y_pred, decimals=0)
+    
+    # Evaluate the model
+    return accuracy_score(_y_test, _y_pred), confusion_matrix(_y_test, _y_pred), classification_report(_y_test, _y_pred)
+
+accuracy_rf, conf_matrix_rf, class_report_rf = random_forest(x_train, x_test, y_train, y_test)
+accuracy_rf_fs, conf_matrix_rf_fs, class_report_rf_fs = random_forest(x_train_fs, x_test_fs, y_train_fs, y_test_fs)
+
+print(f"Accuracy: {accuracy_rf:.2f}")
+print(f"Accuracy fs: {accuracy_rf_fs:.2f}")
+print("Confusion Matrix:\n", conf_matrix_rf)
+print("Confusion Matrix fs:\n", conf_matrix_rf_fs)
+print("Classification Report:\n", class_report_rf)
+print("Classification Report_fs:\n", class_report_rf_fs)
+
+
+M18.# Decision Tree
+
+19.from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+def decision_tree(_x_train, _x_test, _y_train, _y_test):
+    # Initialize and train the Decision Tree Classifier
+    classifier = DecisionTreeClassifier(random_state=0)
+    classifier.fit(_x_train, _y_train)
+    
+    # Predict the target values
+    _y_pred = classifier.predict(_x_test)
+    
+    # Evaluate the model
+    return accuracy_score(_y_test, _y_pred), confusion_matrix(_y_test, _y_pred), classification_report(_y_test, _y_pred)
+
+# Call the function for two different datasets (e.g., with and without feature selection)
+accuracy_dt, conf_matrix_dt, class_report_dt = decision_tree(x_train, x_test, y_train, y_test)
+accuracy_dt_fs, conf_matrix_dt_fs, class_report_dt_fs = decision_tree(x_train_fs, x_test_fs, y_train_fs, y_test_fs)
+
+# Print results
+print(f"Accuracy: {accuracy_dt:.2f}")
+print(f"Accuracy (with feature selection): {accuracy_dt_fs:.2f}")
+print("Confusion Matrix:\n", conf_matrix_dt)
+print("Confusion Matrix (with feature selection):\n", conf_matrix_dt_fs)
+print("Classification Report:\n", class_report_dt)
+print("Classification Report (with feature selection):\n", class_report_dt_fs)
+
+
+M20.# K-Nearest Neighbours
+
+21.from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+def knn_classifier(_x_train, _x_test, _y_train, _y_test, n_neighbors=5):
+    # Initialize and train the K-Nearest Neighbors Classifier
+    classifier = KNeighborsClassifier(n_neighbors=n_neighbors)
+    classifier.fit(_x_train, _y_train)
+    
+    # Predict the target values
+    _y_pred = classifier.predict(_x_test)
+    
+    # Evaluate the model
+    return accuracy_score(_y_test, _y_pred), confusion_matrix(_y_test, _y_pred), classification_report(_y_test, _y_pred)
+
+# Call the function for two different datasets (e.g., with and without feature selection)
+accuracy_knn, conf_matrix_knn, class_report_knn = knn_classifier(x_train, x_test, y_train, y_test)
+accuracy_knn_fs, conf_matrix_knn_fs, class_report_knn_fs = knn_classifier(x_train_fs, x_test_fs, y_train_fs, y_test_fs)
+
+# Print results
+print(f"Accuracy: {accuracy_knn:.2f}")
+print(f"Accuracy (with feature selection): {accuracy_knn_fs:.2f}")
+print("Confusion Matrix:\n", conf_matrix_knn)
+print("Confusion Matrix (with feature selection):\n", conf_matrix_knn_fs)
+print("Classification Report:\n", class_report_knn)
+print("Classification Report (with feature selection):\n", class_report_knn_fs)
+
+
+M22.## Naive Bayes
+
+23.from sklearn.naive_bayes import GaussianNB
+
+def naive_bayes(_x_train, _x_test, _y_train, _y_test):
+    naive_bayes_model = GaussianNB()
+    naive_bayes_model.fit(_x_train, _y_train)
+    
+    _y_pred = naive_bayes_model.predict(_x_test)
+    _y_pred = np.round(_y_pred, decimals=0)
+    
+    
+    # Evaluate the model
+    return accuracy_score(_y_test, _y_pred), confusion_matrix(_y_test, _y_pred), classification_report(_y_test, _y_pred)
+
+accuracy_gnb, conf_matrix_gnb, class_report_gnb = naive_bayes(x_train, x_test, y_train, y_test)
+accuracy_gnb_fs, conf_matrix_gnb_fs, class_report_gnb_fs = naive_bayes(x_train_fs, x_test_fs, y_train_fs, y_test_fs)
+
+print(f"Accuracy: {accuracy_gnb:.2f}")
+print(f"Accuracy fs: {accuracy_gnb_fs:.2f}")
+print("Confusion Matrix:\n", conf_matrix_gnb)
+print("Confusion Matrix fs:\n", conf_matrix_gnb_fs)
+print("Classification Report fs:\n", class_report_gnb_fs)
+
+
+24.matrices = [conf_matrix_lr, conf_matrix_svm, conf_matrix_rf, conf_matrix_dt_fs]  # Replace with your confusion matrices
+accuracies = [accuracy_lr, accuracy_svm, accuracy_rf, accuracy_dt_fs]
+titles = ['Logistic Regression', 'SVM', 'Random Forest', 'Decision Tree']
+
+# Create a figure with a 2x2 grid
+fig, axs = plt.subplots(2, 2, figsize=(12, 10))
+
+# Flatten the axes array for easy iteration
+axs = axs.flatten()
+
+
+for ax, cm, title, accuracy in zip(axs, matrices, titles, accuracies):
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
+    ax.set_title(f'{title} - Ac: {accuracy:.2f}')
+    ax.set_xlabel('Predicted')
+    ax.set_ylabel('True')
+
+plt.tight_layout()
+plt.show()
+
+25.fig, axs = plt.subplots(1, 1, figsize=(6, 5))  # Change to 1 row, 1 column
+
+# Update the structure to handle a single confusion matrix
+matrices = [conf_matrix_knn_fs]  # Replace with your confusion matrix
+accuracies = [accuracy_knn_fs]
+titles = ['K-Nearest Neighbours']
+
+for ax, cm, title, accuracy in zip([axs], matrices, titles, accuracies):  # Wrap `axs` in a list
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
+    ax.set_title(f'{title} - Ac: {accuracy:.2f}')
+
+plt.tight_layout()
+plt.show()
+
+26.# Data for the chart
+algorithms = ['LR()', 'SVM', 'RF', 'DT', 'K-Nearest']
+shade1 = [accuracy_lr*100, accuracy_svm*100, accuracy_rf*100, accuracy_dt*100, accuracy_knn*100]
+shade2 = [accuracy_lr_fs*100, accuracy_svm_fs*100, accuracy_rf_fs*100, accuracy_dt_fs*100, accuracy_knn_fs*100]
+
+# Set the bar width
+bar_width = 0.35
+
+# Positions for each bar on the x-axis
+r1 = np.arange(len(algorithms))
+r2 = [x + bar_width for x in r1]
+
+# Create the grouped bar chart
+plt.bar(r1, shade1, color='lightblue', width=bar_width, edgecolor='grey', label='Using 21 Features')
+plt.bar(r2, shade2, color='orange', width=bar_width, edgecolor='grey', label='Using 15 Features')
+
+# Add labels
+plt.xlabel('Algorithms', fontweight='bold')
+plt.ylabel('Accuracy (in %)', fontweight='bold')
+plt.xticks([r + bar_width for r in range(len(algorithms))], algorithms)
+
+# Move the legend to the right of the plot
+plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), title="Results")
+
+# Adjust the layout to make room for the legend
+plt.tight_layout()
+
+# Display the chart
+plt.show()
